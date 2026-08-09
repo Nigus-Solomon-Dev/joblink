@@ -17,4 +17,6 @@ module.exports = {
   EMAIL_PASS: process.env.EMAIL_PASS,
   EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@joblink.et',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+  TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL,
 };

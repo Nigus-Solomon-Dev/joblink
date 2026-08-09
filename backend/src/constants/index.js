@@ -66,6 +66,7 @@ const NOTIFICATION_TYPES = {
 
 const FILE_UPLOAD = {
   MAX_SIZE: 5 * 1024 * 1024, // 5MB
+  MAX_FILES_PER_REQUEST: 10,
   ALLOWED_MIME_TYPES: [
     'application/pdf',
     'application/msword',
