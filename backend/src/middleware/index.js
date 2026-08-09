@@ -5,6 +5,7 @@ const requestLogger = require('./requestLogger');
 const corsOptions = require('./cors');
 const rateLimiter = require('./rateLimiter');
 const securityHeaders = require('./securityHeaders');
+const optimization = require('./optimization');
 
 module.exports = {
   errorHandler,
@@ -13,4 +14,5 @@ module.exports = {
   corsOptions,
   rateLimiter,
   securityHeaders,
+  optimization,
 };
