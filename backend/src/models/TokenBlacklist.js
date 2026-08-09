@@ -31,4 +31,4 @@ tokenBlacklistSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 tokenBlacklistSchema.index({ userId: 1 });
 tokenBlacklistSchema.index({ token: 1 }, { unique: true });
 
-module.exports = mongoose.model('TokenBlacklist', tokenBlacklistSchema);
+module.exports = mongoose.models.TokenBlacklist || mongoose.model('TokenBlacklist', tokenBlacklistSchema);

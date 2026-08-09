@@ -92,6 +92,14 @@ const userSchema = new mongoose.Schema(
       default: 0,
     },
     lockUntil: Date,
+    telegramId: {
+      type: String,
+      default: null,
+    },
+    telegramSubscribed: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
