@@ -120,6 +120,8 @@ applicationSchema.index({ companyId: 1, status: 1 });
 applicationSchema.index({ reviewedBy: 1 });
 applicationSchema.index({ status: 1, createdAt: -1 });
 applicationSchema.index({ createdAt: -1 });
+applicationSchema.index({ reviewedAt: 1 });
+applicationSchema.index({ 'statusHistory.status': 1, 'statusHistory.changedAt': -1 });
 
 applicationSchema.virtual('job', {
   ref: 'Job',

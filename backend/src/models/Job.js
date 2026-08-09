@@ -164,9 +164,8 @@ jobSchema.index({ location: 1, status: 1 });
 jobSchema.index({ isRemote: 1, status: 1 });
 jobSchema.index({ salaryMin: 1, salaryMax: 1, status: 1 });
 jobSchema.index({ applicationDeadline: 1, status: 1 });
-jobSchema.index({ featured: 1, featuredUntil: 1, status: 1 });
-jobSchema.index({ createdAt: -1 });
-jobSchema.index({ publishedAt: -1 });
+jobSchema.index({ featured: 1, featuredUntil: 1 }, { expireAfterSeconds: 0 });
+jobSchema.index({ applicationDeadline: 1 }, { expireAfterSeconds: 0 });
 
 jobSchema.virtual('company', {
   ref: 'Company',
