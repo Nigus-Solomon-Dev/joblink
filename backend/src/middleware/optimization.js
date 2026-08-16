@@ -28,14 +28,26 @@ const optimizationMiddleware = {
 
   responseTime: (req, res, next) => {
     const start = process.hrtime.bigint();
-    
-    res.on('finish', () => {
+
+    const originalWriteHead = res.writeHead.bind(res);
+    res.writeHead = (statusCode, reasonOrHeaders, maybeHeaders) => {
       const end = process.hrtime.bigint();
       const timeMS = Number(end - start) / 1e6;
-      
-      res.setHeader('X-Response-Time', `${timeMS.toFixed(2)}ms`);
-    });
-    
+      try {
+        if (typeof reasonOrHeaders === 'object') {
+          reasonOrHeaders['X-Response-Time'] = `${timeMS.toFixed(2)}ms`;
+          return originalWriteHead(statusCode, reasonOrHeaders, maybeHeaders);
+        }
+        if (maybeHeaders && typeof maybeHeaders === 'object') {
+          maybeHeaders['X-Response-Time'] = `${timeMS.toFixed(2)}ms`;
+          return originalWriteHead(statusCode, reasonOrHeaders, maybeHeaders);
+        }
+        return originalWriteHead(statusCode, reasonOrHeaders, maybeHeaders);
+      } catch (err) {
+        return originalWriteHead(statusCode, reasonOrHeaders, maybeHeaders);
+      }
+    };
+
     next();
   },
 
