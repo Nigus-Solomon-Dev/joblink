@@ -31,7 +31,7 @@ tokenBlacklistSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 tokenBlacklistSchema.index({ userId: 1 });
 tokenBlacklistSchema.index({ token: 1 }, { unique: true });
 
-const TokenBlacklist = mongoose.model('TokenBlacklist', tokenBlacklistSchema);
+const TokenBlacklist = mongoose.models.TokenBlacklist || mongoose.model('TokenBlacklist', tokenBlacklistSchema);
 
 class TokenBlacklistService {
   async add(token, userId, tokenType = 'refresh') {

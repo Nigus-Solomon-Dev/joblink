@@ -212,7 +212,6 @@ class AnalyticsService {
   }
 
   async getRevenueAnalytics(options = {}) {
-    const Company = require('../models').Company;
     const Job = require('../models').Job;
     const Application = require('../models').Application;
 
@@ -220,39 +219,30 @@ class AnalyticsService {
     const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365;
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const [featuredJobs, paidCompanies, totalApplications] = await Promise.all([
+    // Monetary revenue is not reported here: no payment or subscription system
+    // is implemented, so any dollar figure would be fabricated. Only real,
+    // derivable activity metrics are returned.
+    const [featuredJobs, totalApplications, successfulHires] = await Promise.all([
       Job.countDocuments({
         featured: true,
         featuredUntil: { $gt: new Date() },
         createdAt: { $gte: startDate }
       }),
-      Company.countDocuments({
-        'subscription.status': 'active',
-        createdAt: { $gte: startDate }
-      }),
+      Application.countDocuments({ createdAt: { $gte: startDate } }),
       Application.countDocuments({
         createdAt: { $gte: startDate },
         status: APPLICATION_STATUS.ACCEPTED
       })
     ]);
 
-    const featuredJobPrice = 50;
-    const subscriptionMonthlyPrice = 200;
-    const commissionPerHire = 5;
-
     return {
       period: { start: startDate, end: new Date() },
-      revenue: {
-        featuredJobsRevenue: featuredJobs * featuredJobPrice,
-        subscriptionRevenue: paidCompanies * subscriptionMonthlyPrice,
-        applicationCommission: totalApplications * commissionPerHire
+      revenueAvailable: false,
+      activity: {
+        featuredJobs,
+        totalApplications,
+        successfulHires,
       },
-      breakdown: {
-        featuredJobsEarned: featuredJobs,
-        payingCompanies: paidCompanies,
-        successfulHires: totalApplications
-      },
-      totalRevenue: (featuredJobs * featuredJobPrice) + (paidCompanies * subscriptionMonthlyPrice) + (totalApplications * commissionPerHire)
     };
   }
 

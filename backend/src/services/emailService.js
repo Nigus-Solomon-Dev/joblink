@@ -67,6 +67,13 @@ class EmailService {
         messageId: info.messageId
       });
 
+      if (NODE_ENV !== 'production') {
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) {
+          Logger.info(`[DEV] View this email in your browser: ${previewUrl}`);
+        }
+      }
+
       return { success: true, messageId: info.messageId, info };
     } catch (err) {
       Logger.error('Failed to send email', {

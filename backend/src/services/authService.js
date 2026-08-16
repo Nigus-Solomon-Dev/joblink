@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN } = require('../config/env');
+const { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN, REQUIRE_EMAIL_VERIFICATION } = require('../config/env');
 const { AppError } = require('../utils/errors');
 const TokenBlacklist = require('./tokenBlacklist');
+const EmailService = require('./emailService');
 
 class AuthService {
   generateAccessToken(user) {
@@ -62,19 +63,35 @@ class AuthService {
       throw new AppError('Email already registered', 400);
     }
 
-    const emailVerificationToken = this.generateEmailVerificationToken();
-    
+    let emailVerificationToken = null;
+    const verificationFields = REQUIRE_EMAIL_VERIFICATION
+      ? {
+          emailVerified: false,
+          status: 'pending_verification',
+          emailVerificationToken: null,
+        }
+      : {
+          emailVerified: true,
+          status: 'active',
+        };
+
+    if (REQUIRE_EMAIL_VERIFICATION) {
+      emailVerificationToken = this.generateEmailVerificationToken();
+      verificationFields.emailVerificationToken = this.hashToken(emailVerificationToken);
+      verificationFields.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    }
+
     const user = await User.create({
       ...userData,
       email: userData.email.toLowerCase(),
-      emailVerificationToken: this.hashToken(emailVerificationToken),
-      emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      ...verificationFields,
     });
 
-    return {
-      user,
-      emailVerificationToken,
-    };
+    if (REQUIRE_EMAIL_VERIFICATION) {
+      await EmailService.sendVerificationEmail(user.email, emailVerificationToken, user.name);
+    }
+
+    return { user };
   }
 
   async login(email, password) {
@@ -85,14 +102,19 @@ class AuthService {
       throw new AppError('Invalid email or password', 401);
     }
 
+    let autoActivate = false;
     if (user.status !== 'active') {
-      if (user.status === 'pending_verification') {
+      if (user.status === 'pending_verification' && !REQUIRE_EMAIL_VERIFICATION) {
+        autoActivate = true;
+      } else if (user.status === 'pending_verification') {
         throw new AppError('Please verify your email before logging in', 401);
       }
       if (user.status === 'suspended') {
         throw new AppError('Your account has been suspended', 401);
       }
-      throw new AppError('Account is not active', 401);
+      if (!autoActivate && user.status !== 'active') {
+        throw new AppError('Account is not active', 401);
+      }
     }
 
     if (user.isLocked) {
@@ -106,6 +128,14 @@ class AuthService {
     }
 
     await user.resetLoginAttempts();
+
+    if (autoActivate) {
+      user.status = 'active';
+      user.emailVerified = true;
+      user.emailVerificationToken = undefined;
+      user.emailVerificationExpires = undefined;
+      await user.save();
+    }
 
     const tokens = this.generateTokens(user);
     
@@ -196,10 +226,9 @@ class AuthService {
     user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
     await user.save();
 
-    return {
-      user,
-      emailVerificationToken,
-    };
+    await EmailService.sendVerificationEmail(user.email, emailVerificationToken, user.name);
+
+    return { user };
   }
 
   async forgotPassword(email) {
@@ -215,10 +244,9 @@ class AuthService {
     user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save();
 
-    return {
-      user,
-      resetToken,
-    };
+    await EmailService.sendPasswordResetEmail(user.email, resetToken, user.name);
+
+    return { user };
   }
 
   async resetPassword(token, newPassword) {
