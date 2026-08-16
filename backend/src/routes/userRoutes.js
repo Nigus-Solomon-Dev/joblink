@@ -73,6 +73,10 @@ router.post(
 
 router.delete('/me', userController.deleteAccount);
 
+// Admin stats/search routes (registered before /:id to avoid being shadowed)
+router.get('/stats', restrictTo('admin'), userController.getUserStats);
+router.get('/search', restrictTo('admin'), userController.searchUsers);
+
 // Public profile route (no auth required for viewing)
 router.get('/:id', userController.getPublicProfile);
 
@@ -80,10 +84,6 @@ router.get('/:id', userController.getPublicProfile);
 router.use(restrictTo('admin'));
 
 router.get('/', userController.getAllUsers);
-
-router.get('/stats', userController.getUserStats);
-
-router.get('/search', userController.searchUsers);
 
 router.get('/:id', userController.getUserById);
 

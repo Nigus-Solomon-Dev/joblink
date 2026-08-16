@@ -11,6 +11,11 @@ const router = express.Router();
 router.get('/', companyController.getAllCompanies);
 router.get('/search', companyController.searchCompanies);
 router.get('/slug/:slug', companyController.getCompanyBySlug);
+
+// Admin routes (registered before /:id to avoid being shadowed)
+router.get('/admin', protect, restrictTo('admin'), companyController.adminGetAllCompanies);
+router.get('/admin/:id', protect, restrictTo('admin'), companyController.adminGetCompany);
+
 router.get('/:id', companyController.getCompany);
 router.get('/:id/stats', protect, companyController.getCompanyStats);
 
@@ -158,9 +163,6 @@ router.patch(
 
 // Admin routes
 router.use('/admin', restrictTo('admin'));
-
-router.get('/admin', companyController.adminGetAllCompanies);
-router.get('/admin/:id', companyController.adminGetCompany);
 
 router.patch(
   '/admin/:id',

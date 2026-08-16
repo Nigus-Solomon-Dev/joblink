@@ -10,6 +10,11 @@ const router = express.Router();
 router.get('/', jobController.getAllJobs);
 router.get('/search', jobController.searchJobs);
 router.get('/featured', jobController.getFeaturedJobs);
+
+// Admin routes (registered before /:id to avoid being shadowed)
+router.get('/admin', protect, restrictTo('admin'), jobController.adminGetAllJobs);
+router.get('/admin/:id', protect, restrictTo('admin'), jobController.adminGetJob);
+
 router.get('/:id', jobController.getJob);
 router.get('/:id/stats', protect, jobController.getJobStats);
 
@@ -201,9 +206,6 @@ router.post('/:id/archive', jobController.archiveJob);
 
 // Admin routes
 router.use('/admin', restrictTo('admin'));
-
-router.get('/admin', jobController.adminGetAllJobs);
-router.get('/admin/:id', jobController.adminGetJob);
 
 router.patch(
   '/admin/:id',

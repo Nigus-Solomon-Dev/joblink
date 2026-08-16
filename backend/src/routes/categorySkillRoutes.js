@@ -22,8 +22,10 @@ router.get('/skills/category/:category', skillController.getSkillsByCategory);
 router.get('/skills/slug/:slug', skillController.getSkillBySlug);
 router.get('/skills/:id', skillController.getSkill);
 
-// Protected admin routes
-router.use(protect, restrictTo('admin'));
+// Protected admin routes (scoped to category/skill paths — the router is
+// mounted at /api/v1, so an unscoped protect would gate every /api/v1/* route)
+router.use('/categories', protect, restrictTo('admin'));
+router.use('/skills', protect, restrictTo('admin'));
 
 // Category admin routes
 router.post(
