@@ -7,7 +7,7 @@ import type { Paginated } from "@/types/api";
 
 import { http, unwrap, unwrapPaginated } from "./http";
 
-const conv = (id: string) => `/conversations/${encodeURIComponent(id)}`;
+const conv = (id: string) => `/messages/conversations/${encodeURIComponent(id)}`;
 
 /* ------------------------------------------------------------------ */
 /* Conversations                                                       */
@@ -25,7 +25,7 @@ export async function getConversations(
   params: ConversationQueryParams = {},
 ): Promise<Paginated<Conversation>> {
   return unwrapPaginated<Conversation>(
-    await http.get("/conversations", {
+    await http.get("/messages/conversations", {
       params: {
         page: params.page || undefined,
         limit: params.limit || undefined,
@@ -48,7 +48,7 @@ export async function createDirectConversation(
   userId: string,
 ): Promise<{ conversation: Conversation }> {
   return unwrap<{ conversation: Conversation }>(
-    await http.post("/conversations/direct", { userId }),
+    await http.post("/messages/conversations/direct", { userId }),
   );
 }
 
@@ -63,7 +63,7 @@ export async function createGroupConversation(
   input: GroupConversationInput,
 ): Promise<{ conversation: Conversation }> {
   return unwrap<{ conversation: Conversation }>(
-    await http.post("/conversations/group", input),
+    await http.post("/messages/conversations/group", input),
   );
 }
 
@@ -140,7 +140,7 @@ export async function getMessages(
   params: MessagesQueryParams = {},
 ): Promise<Paginated<Message>> {
   return unwrapPaginated<Message>(
-    await http.get(`/conversations/${encodeURIComponent(conversationId)}/messages`, {
+    await http.get(`/messages/conversations/${encodeURIComponent(conversationId)}/messages`, {
       params: {
         page: params.page || undefined,
         limit: params.limit || undefined,
@@ -163,7 +163,7 @@ export async function sendMessage(
 ): Promise<{ message: Message }> {
   return unwrap<{ message: Message }>(
     await http.post(
-      `/conversations/${encodeURIComponent(conversationId)}/messages`,
+      `/messages/conversations/${encodeURIComponent(conversationId)}/messages`,
       input,
     ),
   );
@@ -186,7 +186,7 @@ export async function markConversationRead(
   conversationId: string,
 ): Promise<void> {
   await http.post(
-    `/conversations/${encodeURIComponent(conversationId)}/read`,
+    `/messages/conversations/${encodeURIComponent(conversationId)}/read`,
   );
 }
 
@@ -226,7 +226,7 @@ export async function uploadMessageAttachment(
   formData.append("file", file);
   return unwrap<{ attachment: MessageAttachment }>(
     await http.post(
-      `/conversations/${encodeURIComponent(conversationId)}/attachments`,
+      `/messages/conversations/${encodeURIComponent(conversationId)}/attachments`,
       formData,
       { headers: { "Content-Type": "multipart/form-data" } },
     ),

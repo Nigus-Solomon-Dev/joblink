@@ -542,7 +542,11 @@ export function MessagesScreen() {
         )}
       </div>
 
-      <NewConversationModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <NewConversationModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onStarted={(id) => setActiveId(id)}
+      />
     </div>
   );
 }

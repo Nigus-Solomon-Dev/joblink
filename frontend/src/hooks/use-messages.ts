@@ -52,6 +52,7 @@ import {
   type RemovedFromConversationEvent,
   type UserTypingEvent,
 } from "@/lib/messaging-socket";
+import { searchUsers, type UserSummary } from "@/lib/api/users";
 import type { Message } from "@/types";
 
 /* ------------------------------------------------------------------ */
@@ -329,6 +330,20 @@ export function useMessageSearch(q: string, enabled = false) {
     enabled: enabled && status === "authenticated" && q.trim().length >= 2,
   });
 }
+
+/** Debounced search for active users (for starting conversations). */
+export function useUserSearch(query: string, enabled = false) {
+  const { status } = useAuth();
+  const trimmed = query.trim();
+  return useQuery({
+    queryKey: ["users", "search", trimmed],
+    queryFn: () => searchUsers(trimmed, { limit: 8 }),
+    enabled: enabled && status === "authenticated" && trimmed.length >= 2,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export type { UserSummary };
 
 /* ------------------------------------------------------------------ */
 /* Socket wiring                                                       */

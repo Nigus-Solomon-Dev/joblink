@@ -39,12 +39,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [status, setStatus] = useState<AuthStatus>(() =>
-    getAccessToken() ? "loading" : "unauthenticated",
-  );
+  const [status, setStatus] = useState<AuthStatus>("loading");
 
   const bootstrap = useCallback(async () => {
-    if (!getAccessToken()) return;
+    if (!getAccessToken()) {
+      setUser(null);
+      setStatus("unauthenticated");
+      return;
+    }
     try {
       const { user: currentUser } = await authApi.getMeRequest();
       setUser(currentUser);

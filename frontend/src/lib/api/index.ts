@@ -10,4 +10,5 @@ export * as jobseekerDashboardApi from "./jobseeker-dashboard";
 export * as employerDashboardApi from "./employer-dashboard";
 export * as analyticsApi from "./analytics";
 export * as messagesApi from "./messages";
+export * as usersApi from "./users";
 export * as adminApi from "./admin";
