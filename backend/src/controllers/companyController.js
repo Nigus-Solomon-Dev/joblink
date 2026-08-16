@@ -1,5 +1,5 @@
 const companyService = require('../services/companyService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const { AppError, NotFoundError } = require('../utils/errors');
 const { protect, restrictTo } = require('../middleware/auth');

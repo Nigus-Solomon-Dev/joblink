@@ -1,5 +1,5 @@
 const fileUploadService = require('../services/fileUploadService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const upload = require('../middleware/upload');
 const { protect, restrictTo } = require('../middleware/auth');

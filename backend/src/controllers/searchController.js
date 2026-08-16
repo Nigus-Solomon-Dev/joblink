@@ -1,5 +1,5 @@
 const searchService = require('../services/searchService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const { AppError } = require('../utils/errors');
 const { protect, optionalAuth } = require('../middleware/auth');

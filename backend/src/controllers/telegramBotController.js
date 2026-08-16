@@ -1,5 +1,5 @@
 const telegramBotService = require('../services/telegramBotService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const { AppError } = require('../utils/errors');
 

@@ -1,8 +1,7 @@
 const authService = require('../services/authService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const { AppError } = require('../utils/errors');
-const EmailService = require('../services/emailService');
 
 class AuthController {
   register = catchAsync(async (req, res, next) => {
@@ -12,14 +11,12 @@ class AuthController {
       throw new AppError('Passwords do not match', 400);
     }
 
-    const { user, emailVerificationToken } = await authService.register({
+    const { user } = await authService.register({
       name,
       email,
       password,
       role: role || 'job_seeker',
     });
-
-    await EmailService.sendVerificationEmail(user.email, emailVerificationToken);
 
     const response = ApiResponse.created({
       user: user.toPublicJSON(),
@@ -123,9 +120,7 @@ class AuthController {
       throw new AppError('Email is required', 400);
     }
 
-    const { emailVerificationToken } = await authService.resendVerificationEmail(email);
-
-    await EmailService.sendVerificationEmail(email, emailVerificationToken);
+    await authService.resendVerificationEmail(email);
 
     const response = ApiResponse.success(null, 'Verification email sent. Please check your inbox.');
     res.status(200).json(response);
@@ -138,9 +133,7 @@ class AuthController {
       throw new AppError('Email is required', 400);
     }
 
-    const { resetToken } = await authService.forgotPassword(email);
-
-    await EmailService.sendPasswordResetEmail(email, resetToken);
+    await authService.forgotPassword(email);
 
     const response = ApiResponse.success(null, 'Password reset email sent. Please check your inbox.');
     res.status(200).json(response);

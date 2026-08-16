@@ -1,5 +1,5 @@
 const analyticsService = require('../services/analyticsService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const { protect, restrictTo } = require('../middleware/auth');
 

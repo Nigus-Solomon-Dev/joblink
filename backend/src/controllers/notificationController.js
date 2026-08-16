@@ -1,5 +1,5 @@
 const notificationService = require('../services/notificationService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const { AppError, NotFoundError } = require('../utils/errors');
 const { protect } = require('../middleware/auth');

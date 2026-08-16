@@ -1,6 +1,6 @@
 const messageService = require('../services/messageService');
 const conversationService = require('../services/conversationService');
-const { ApiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const { AppError, NotFoundError } = require('../utils/errors');
 const { protect } = require('../middleware/auth');
