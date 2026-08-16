@@ -82,7 +82,7 @@ categorySchema.pre('validate', function (next) {
   next();
 });
 
-categorySchema.pre('save', async function (next) {
+categorySchema.pre('save', async function () {
   if (this.isModified('name') || this.isModified('slug')) {
     const baseSlug = this.slug || slugify(this.name);
     let uniqueSlug = baseSlug;
@@ -94,7 +94,6 @@ categorySchema.pre('save', async function (next) {
     }
     this.slug = uniqueSlug;
   }
-  next();
 });
 
 categorySchema.methods.incrementJobsCount = async function () {

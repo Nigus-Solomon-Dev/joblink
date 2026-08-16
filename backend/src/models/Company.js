@@ -88,7 +88,7 @@ const companySchema = new mongoose.Schema(
       linkedin: {
         type: String,
         trim: true,
-        match: [/^https?:\/\/(www\.)?linkedin\.com\/.*/, 'Please provide a valid LinkedIn URL'],
+        match: [/^https?:\/\/(www\.)?linkedin\.com\/.*$|^[a-zA-Z0-9](?:[a-zA-Z0-9\-]{2,})$/, 'Please provide a valid LinkedIn URL'],
         default: '',
       },
       twitter: {
@@ -163,7 +163,7 @@ companySchema.pre('validate', function (next) {
   next();
 });
 
-companySchema.pre('save', async function (next) {
+companySchema.pre('save', async function () {
   if (this.isModified('name') || this.isModified('slug')) {
     const baseSlug = this.slug || slugify(this.name);
     let uniqueSlug = baseSlug;
@@ -175,7 +175,6 @@ companySchema.pre('save', async function (next) {
     }
     this.slug = uniqueSlug;
   }
-  next();
 });
 
 companySchema.methods.incrementViews = async function () {

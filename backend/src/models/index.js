@@ -11,6 +11,7 @@ const Conversation = require('./Conversation');
 const Message = require('./Message');
 const SavedJob = require('./SavedJob');
 const TokenBlacklist = require('./TokenBlacklist');
+const SiteSetting = require('./SiteSetting');
 
 module.exports = {
   User,
@@ -24,4 +25,5 @@ module.exports = {
   Message,
   SavedJob,
   TokenBlacklist,
+  SiteSetting,
 };

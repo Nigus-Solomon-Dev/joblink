@@ -71,7 +71,7 @@ skillSchema.pre('validate', function (next) {
   next();
 });
 
-skillSchema.pre('save', async function (next) {
+skillSchema.pre('save', async function () {
   if (this.isModified('name') || this.isModified('slug')) {
     const baseSlug = this.slug || slugify(this.name);
     let uniqueSlug = baseSlug;
@@ -83,7 +83,6 @@ skillSchema.pre('save', async function (next) {
     }
     this.slug = uniqueSlug;
   }
-  next();
 });
 
 skillSchema.methods.incrementJobsCount = async function () {

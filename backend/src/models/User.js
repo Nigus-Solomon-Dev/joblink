@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema(
     linkedin: {
       type: String,
       trim: true,
-      match: [/^https?:\/\/(www\.)?linkedin\.com\/.*/, 'Please provide a valid LinkedIn URL'],
+      match: [/^https?:\/\/(www\.)?linkedin\.com\/.*$|^[a-zA-Z0-9](?:[a-zA-Z0-9\-]{2,})$/, 'Please provide a valid LinkedIn URL'],
       default: '',
     },
     skills: [{
@@ -138,12 +138,11 @@ userSchema.virtual('fullProfile').get(function () {
   };
 });
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+
   const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
   this.password = await bcrypt.hash(this.password, saltRounds);
-  next();
 });
 
 userSchema.pre('save', function (next) {
@@ -151,7 +150,6 @@ userSchema.pre('save', function (next) {
     this.markModified('emailVerificationToken');
     this.markModified('passwordResetToken');
   }
-  next();
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {

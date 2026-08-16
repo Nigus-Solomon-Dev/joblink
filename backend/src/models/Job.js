@@ -230,7 +230,7 @@ jobSchema.pre('validate', function (next) {
   next();
 });
 
-jobSchema.pre('save', async function (next) {
+jobSchema.pre('save', async function () {
   if (this.isModified('title') || this.isModified('slug')) {
     const baseSlug = this.slug || slugify(this.title);
     let uniqueSlug = baseSlug;
@@ -250,8 +250,6 @@ jobSchema.pre('save', async function (next) {
   if (this.isModified('status') && this.status === JOB_STATUS.PUBLISHED && !this.expiresAt) {
     this.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   }
-  
-  next();
 });
 
 jobSchema.methods.incrementViews = async function () {
