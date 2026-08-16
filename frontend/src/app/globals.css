@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/*
+  JobLink design tokens — single source of truth for the visual identity.
+  Palette: chocolate + apricot. Warm, human, not the default AI-blue.
+*/
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* App surfaces — warm cream */
+  --color-background: #f5f0e7;
+  --color-foreground: #2a1b10;
+
+  /* Brand primary (chocolate) */
+  --color-primary-50: #f8f4ee;
+  --color-primary-100: #eee4d6;
+  --color-primary-200: #ddcdb4;
+  --color-primary-300: #c5ab85;
+  --color-primary-400: #ab865e;
+  --color-primary-500: #936c45;
+  --color-primary-600: #7c5634;
+  --color-primary-700: #67452a;
+  --color-primary-800: #533822;
+  --color-primary-900: #422c1c;
+  --color-primary-950: #2a1b10;
+
+  /* Accent — apricot, used sparingly for highlights and calls to action */
+  --color-accent-50: #fdf4ea;
+  --color-accent-100: #fbe5d0;
+  --color-accent-200: #f7d0a8;
+  --color-accent-500: #f0a35f;
+  --color-accent-600: #e2854a;
+  --color-accent-700: #c46a35;
+  --color-accent-900: #8f4a21;
+
+  /* Surfaces & borders — warm neutrals */
+  --color-surface: #fffcf7;
+  --color-surface-muted: #f4ede1;
+  --color-surface-sunken: #ebe1d0;
+  --color-border: #e7dbc6;
+  --color-border-strong: #d3c3a6;
+
+  /* Semantic (functional, kept warm) */
+  --color-success-50: #f0f7f0;
+  --color-success-100: #dcebe0;
+  --color-success-500: #5f8a66;
+  --color-success-600: #47704f;
+  --color-success-700: #36593d;
+  --color-warning-50: #fdf7ec;
+  --color-warning-100: #fbeeda;
+  --color-warning-500: #e2a33b;
+  --color-warning-600: #c6851f;
+  --color-warning-700: #a06a16;
+  --color-danger-50: #fbefee;
+  --color-danger-100: #f5dcd9;
+  --color-danger-500: #d96a5f;
+  --color-danger-600: #c04a3e;
+  --color-danger-700: #9c382e;
+  --color-info-50: #faf6ef;
+  --color-info-100: #f1e8da;
+  --color-info-200: #e5d5bc;
+  --color-info-500: #b28a62;
+  --color-info-600: #8f6b46;
+  --color-info-700: #74522d;
+  --color-info-800: #5f4127;
+
+  /* Espresso — deep warm darks for footers and hero panels */
+  --color-espresso-800: #2b1d12;
+  --color-espresso-900: #211609;
+  --color-espresso-950: #180f06;
+
+  /* Elevation — warm shadows */
+  --shadow-card: 0 1px 2px rgb(42 27 16 / 0.05), 0 4px 16px rgb(42 27 16 / 0.07);
+  --shadow-popover: 0 4px 6px -2px rgb(42 27 16 / 0.07), 0 12px 40px rgb(42 27 16 / 0.16);
+  --shadow-float: 0 8px 30px rgb(42 27 16 / 0.2);
+  --shadow-primary: 0 4px 12px rgb(124 86 52 / 0.35);
+
+  /* Entrance animations */
+  --animate-rise: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.8s ease-out both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  /* Accessible, consistent focus indicator */
+  :focus-visible {
+    outline: 2px solid var(--color-primary-600);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility container-site {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 72rem;
+  padding-inline: 1rem;
+
+  @media (min-width: 640px) {
+    padding-inline: 1.5rem;
+  }
+}
