@@ -18,6 +18,12 @@ router.post('/upload-multiple',
   (req, res, next) => next()
 );
 
+router.get('/signature', 
+  query('folder').optional().isString().withMessage('Folder must be a string'),
+  validate,
+  fileUploadController.getUploadSignature
+);
+
 router.delete('/:publicId', 
   param('publicId')
     .notEmpty()
@@ -35,12 +41,6 @@ router.get('/:publicId',
     .withMessage('Public ID is required'),
   validate,
   fileUploadController.getFileInfo
-);
-
-router.get('/signature', 
-  query('folder').optional().isString().withMessage('Folder must be a string'),
-  validate,
-  fileUploadController.getUploadSignature
 );
 
 module.exports = router;

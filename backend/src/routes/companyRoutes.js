@@ -16,6 +16,8 @@ router.get('/slug/:slug', companyController.getCompanyBySlug);
 router.get('/admin', protect, restrictTo('admin'), companyController.adminGetAllCompanies);
 router.get('/admin/:id', protect, restrictTo('admin'), companyController.adminGetCompany);
 
+router.get('/my-companies', protect, companyController.getMyCompanies);
+
 router.get('/:id', companyController.getCompany);
 router.get('/:id/stats', protect, companyController.getCompanyStats);
 
@@ -59,8 +61,6 @@ router.post(
   validate,
   companyController.createCompany
 );
-
-router.get('/my-companies', companyController.getMyCompanies);
 
 router.patch(
   '/:id',

@@ -15,15 +15,15 @@ router.get('/featured', jobController.getFeaturedJobs);
 router.get('/admin', protect, restrictTo('admin'), jobController.adminGetAllJobs);
 router.get('/admin/:id', protect, restrictTo('admin'), jobController.adminGetJob);
 
+router.get('/my-jobs', protect, jobController.getMyJobs);
+router.get('/recommended', protect, jobController.getRecommendedJobs);
+router.get('/company/:companyId', protect, jobController.getCompanyJobs);
+
 router.get('/:id', jobController.getJob);
 router.get('/:id/stats', protect, jobController.getJobStats);
 
 // Protected routes
 router.use(protect);
-
-router.get('/recommended', jobController.getRecommendedJobs);
-router.get('/my-jobs', jobController.getMyJobs);
-router.get('/company/:companyId', jobController.getCompanyJobs);
 
 router.post(
   '/',

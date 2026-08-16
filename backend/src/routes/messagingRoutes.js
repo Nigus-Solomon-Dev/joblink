@@ -72,13 +72,15 @@ router.post(
 );
 
 router.get('/conversations/:conversationId/messages', messageController.getMessages);
-router.get('/messages/:id', messageController.getMessage);
+// Message-level routes live directly under `/api/v1/messages` (no extra nesting).
+router.get('/search', messageController.searchMessages);
+router.get('/:id', messageController.getMessage);
 
-router.patch('/messages/:id/read', messageController.markAsRead);
+router.patch('/:id/read', messageController.markAsRead);
 router.post('/conversations/:conversationId/read', messageController.markConversationAsRead);
 
 router.patch(
-  '/messages/:id',
+  '/:id',
   [
     body('content').trim().isLength({ min: 1, max: 5000 }).withMessage('Message content is required (1-5000 characters)'),
   ],
@@ -86,9 +88,7 @@ router.patch(
   messageController.editMessage
 );
 
-router.delete('/messages/:id', messageController.deleteMessage);
-
-router.get('/messages/search', messageController.searchMessages);
+router.delete('/:id', messageController.deleteMessage);
 
 router.post(
   '/conversations/:conversationId/attachments',

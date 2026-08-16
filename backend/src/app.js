@@ -42,8 +42,12 @@ if (config.NODE_ENV === 'development') {
 }
 app.use(requestLogger);
 
-// Rate limiting
-app.use(rateLimiter());
+// Rate limiting (generous global cap; stricter per-route limits live on sensitive routes)
+app.use(
+  rateLimiter({
+    skip: (req) => req.path === '/health' || req.path === '/metrics',
+  })
+);
 
 // Performance timing middleware
 app.use((req, res, next) => {

@@ -3,11 +3,20 @@ const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const { validate } = require('../utils/validation');
 const { protect } = require('../middleware/auth');
+const rateLimiter = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
+// Strict limits for credential-based endpoints to deter brute force
+const authLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 20,
+  message: 'Too many attempts, please try again later',
+});
+
 router.post(
   '/register',
+  authLimiter,
   [
     body('name')
       .trim()
@@ -36,6 +45,7 @@ router.post(
 
 router.post(
   '/login',
+  authLimiter,
   [
     body('email')
       .isEmail()
@@ -59,6 +69,7 @@ router.get('/verify-email/:token', authController.verifyEmail);
 
 router.post(
   '/resend-verification',
+  authLimiter,
   [
     body('email')
       .isEmail()
@@ -71,6 +82,7 @@ router.post(
 
 router.post(
   '/forgot-password',
+  authLimiter,
   [
     body('email')
       .isEmail()
@@ -83,6 +95,7 @@ router.post(
 
 router.post(
   '/reset-password/:token',
+  authLimiter,
   [
     body('password')
       .isLength({ min: 8 })

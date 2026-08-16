@@ -227,7 +227,7 @@ jobSchema.pre('validate', function (next) {
   if (this.isModified('title') && !this.slug) {
     this.slug = slugify(this.title);
   }
-  next();
+
 });
 
 jobSchema.pre('save', async function () {

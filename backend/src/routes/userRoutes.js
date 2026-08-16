@@ -75,7 +75,8 @@ router.delete('/me', userController.deleteAccount);
 
 // Admin stats/search routes (registered before /:id to avoid being shadowed)
 router.get('/stats', restrictTo('admin'), userController.getUserStats);
-router.get('/search', restrictTo('admin'), userController.searchUsers);
+// Search is available to any authenticated user so they can find people to message.
+router.get('/search', userController.searchUsers);
 
 // Public profile route (no auth required for viewing)
 router.get('/:id', userController.getPublicProfile);

@@ -117,7 +117,7 @@ conversationSchema.pre('save', function (next) {
       newUserIds.includes(p.userId.toString())
     );
   }
-  next();
+
 });
 
 conversationSchema.methods.getParticipantDetail = function (userId) {

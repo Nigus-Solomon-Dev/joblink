@@ -30,7 +30,8 @@ router.patch('/:id/unread', notificationController.markAsUnread);
 
 router.post('/mark-all-read', notificationController.markAllAsRead);
 
-router.delete('/:id', notificationController.deleteNotification);
 router.delete('/read', notificationController.deleteReadNotifications);
+
+router.delete('/:id', notificationController.deleteNotification);
 
 module.exports = router;

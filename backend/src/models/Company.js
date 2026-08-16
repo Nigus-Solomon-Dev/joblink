@@ -160,7 +160,7 @@ companySchema.pre('validate', function (next) {
   if (this.isModified('name') && !this.slug) {
     this.slug = slugify(this.name);
   }
-  next();
+
 });
 
 companySchema.pre('save', async function () {

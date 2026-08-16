@@ -167,7 +167,7 @@ applicationSchema.pre('save', function (next) {
       notes: `Status changed to ${this.status}`,
     });
   }
-  next();
+ 
 });
 
 applicationSchema.methods.updateStatus = async function (newStatus, reviewedBy, notes = '') {

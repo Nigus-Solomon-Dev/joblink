@@ -1,15 +1,18 @@
-// Rate limiting middleware (basic implementation)
-const rateLimitStore = new Map();
-
+// Rate limiting middleware (in-memory implementation)
 const rateLimiter = (options = {}) => {
   const {
     windowMs = 15 * 60 * 1000, // 15 minutes
-    maxRequests = 100,
+    maxRequests = 600,
     message = 'Too many requests from this IP, please try again later',
     statusCode = 429,
+    skip = () => false,
   } = options;
 
+  const rateLimitStore = new Map();
+
   return (req, res, next) => {
+    if (skip(req)) return next();
+
     const ip = req.ip;
     const now = Date.now();
     const windowStart = now - windowMs;
@@ -35,19 +38,5 @@ const rateLimiter = (options = {}) => {
     next();
   };
 };
-
-// Clean up old entries periodically
-setInterval(() => {
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000;
-  for (const [ip, requests] of rateLimitStore.entries()) {
-    const validRequests = requests.filter(time => time > now - windowMs);
-    if (validRequests.length === 0) {
-      rateLimitStore.delete(ip);
-    } else {
-      rateLimitStore.set(ip, validRequests);
-    }
-  }
-}, 5 * 60 * 1000); // Clean up every 5 minutes
 
 module.exports = rateLimiter;
