@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Mail, MessageSquarePlus, Paperclip, Search, Send, Settings2 } from "lucide-react";
 
 import { Avatar, Button, EmptyState, Input, Skeleton, Spinner, Textarea, useToast } from "@/components/ui";
@@ -513,9 +514,30 @@ function ConversationList({
 }
 
 export function MessagesScreen() {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedConversation = searchParams.get("conversation");
+  const [activeId, setActiveId] = useState<string | null>(requestedConversation);
   const [createOpen, setCreateOpen] = useState(false);
   const mobileDetailOpen = Boolean(activeId);
+
+  useEffect(() => {
+    if (requestedConversation && requestedConversation !== activeId) {
+      setActiveId(requestedConversation);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedConversation]);
+
+  useEffect(() => {
+    if (activeId) {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("conversation") !== activeId) {
+        url.searchParams.set("conversation", activeId);
+        router.replace(`${url.pathname}${url.search}`, { scroll: false });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, requestedConversation]);
 
   useMessagingSocketLifecycle();
   const { data: activeResult } = useConversation(activeId ?? undefined);
