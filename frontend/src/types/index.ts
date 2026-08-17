@@ -354,6 +354,7 @@ export interface JobListItem {
   viewsCount?: number;
   applicationsCount?: number;
   savesCount?: number;
+  skillMatchCount?: number;
   createdAt: string;
 }
 
