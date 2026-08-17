@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
+import { useSearchParams } from "next/navigation";
 import { BadgeCheck, Building2, UserRound } from "lucide-react";
 
 import { RedirectIfAuthenticated } from "@/components/auth/guards";
@@ -84,6 +85,7 @@ const roleOptions = [
 
 export function RegisterPage() {
   const { register: registerAccount } = useAuth();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<RegisterStep>("form");
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -96,7 +98,13 @@ export function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", role: "job_seeker", password: "", confirmPassword: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+      role: searchParams.get("role") === "employer" ? "employer" : "job_seeker",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
   const selectedRole = useWatch({ control, name: "role" });
