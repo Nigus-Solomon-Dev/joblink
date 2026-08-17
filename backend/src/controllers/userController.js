@@ -83,7 +83,25 @@ class UserController {
       throw new AppError('No file uploaded', 400);
     }
 
-    const result = await new Promise((resolve, reject) => {
+    let avatarUrl;
+    try {
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+        avatarUrl = await this._uploadToCloudinary(req.file.buffer);
+      } else {
+        avatarUrl = this._saveAvatarLocally(req);
+      }
+    } catch (error) {
+      avatarUrl = this._saveAvatarLocally(req);
+    }
+
+    const user = await userService.updateAvatar(req.user.id, avatarUrl);
+
+    const response = ApiResponse.success({ user }, 'Avatar uploaded successfully');
+    res.status(200).json(response);
+  });
+
+  _uploadToCloudinary(buffer) {
+    return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: 'joblink/avatars',
@@ -94,17 +112,26 @@ class UserController {
         },
         (error, result) => {
           if (error) reject(error);
-          else resolve(result);
+          else resolve(result.secure_url);
         }
       );
-      stream.end(req.file.buffer);
+      stream.end(buffer);
     });
+  }
 
-    const user = await userService.updateAvatar(req.user.id, result.secure_url);
-    
-    const response = ApiResponse.success({ user }, 'Avatar uploaded successfully');
-    res.status(200).json(response);
-  });
+  _saveAvatarLocally(req) {
+    const fs = require('fs');
+    const path = require('path');
+    const avatarsDir = path.join(__dirname, '..', '..', 'uploads', 'avatars');
+    fs.mkdirSync(avatarsDir, { recursive: true });
+
+    const ext = req.file.mimetype === 'image/png' ? 'png' : req.file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+    fs.writeFileSync(path.join(avatarsDir, filename), req.file.buffer);
+
+    const baseUrl = process.env.PUBLIC_UPLOAD_BASE || `${req.protocol}://${req.get('host')}`;
+    return `${baseUrl}/uploads/avatars/${filename}`;
+  }
 
   deleteAccount = catchAsync(async (req, res, next) => {
     await userService.deleteUser(req.user.id);
