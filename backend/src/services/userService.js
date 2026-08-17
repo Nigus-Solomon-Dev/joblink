@@ -22,7 +22,7 @@ class UserService {
   async updateUser(userId, updateData, isAdmin = false) {
     const User = require('../models').User;
     
-    const allowedFields = ['name', 'phone', 'bio', 'location', 'website', 'linkedin', 'avatar'];
+    const allowedFields = ['name', 'phone', 'bio', 'location', 'website', 'linkedin', 'avatar', 'skills'];
     const adminFields = ['role', 'status', 'emailVerified'];
     
     const updates = {};
