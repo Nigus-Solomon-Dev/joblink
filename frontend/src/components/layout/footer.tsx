@@ -16,8 +16,8 @@ const footerColumns = [
   {
     heading: "For employers",
     links: [
-      { label: "Post a job", href: "/register" },
-      { label: "Create a company page", href: "/register" },
+      { label: "Post a job", href: "/register?role=employer" },
+      { label: "Create a company page", href: "/register?role=employer" },
     ],
   },
   {
