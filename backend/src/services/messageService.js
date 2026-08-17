@@ -44,7 +44,7 @@ class MessageService {
         title: 'New Message',
         message: `You have a new message`,
         data: { conversationId: conversation._id, messageId: message._id },
-        relatedEntity: { entityType: 'message', entityId: message._id },
+        relatedEntity: { entityType: 'conversation', entityId: conversation._id },
         priority: 'normal',
       });
 
