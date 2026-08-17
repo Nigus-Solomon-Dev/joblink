@@ -92,15 +92,20 @@ export const profileSchema = z.object({
     .trim()
     .refine((value) => value === "" || /^https?:\/\/.+\..+/.test(value), "Please provide a valid URL."),
   linkedin: linkedinSchema,
+  skills: z.array(z.string().min(1)).max(50, "You can add up to 50 skills."),
 });
 export type ProfileFormValues = z.infer<typeof profileSchema>;
 
-/** Collapses empty optional strings to `undefined` so the backend skips them. */
+/** Collapses empty optional strings to `undefined` so the backend skips them; keeps arrays intact. */
 export function cleanProfilePayload(
   values: ProfileFormValues,
-): Partial<Pick<ProfileFormValues, "name" | "phone" | "bio" | "location" | "website" | "linkedin">> {
-  const cleaned: Record<string, string | undefined> = {};
+): Partial<Pick<ProfileFormValues, "name" | "phone" | "bio" | "location" | "website" | "linkedin" | "skills">> {
+  const cleaned: Record<string, string | string[] | undefined> = {};
   for (const [key, value] of Object.entries(values)) {
+    if (Array.isArray(value)) {
+      cleaned[key] = value;
+      continue;
+    }
     const trimmed = value.trim();
     cleaned[key] = trimmed === "" ? undefined : trimmed;
   }
