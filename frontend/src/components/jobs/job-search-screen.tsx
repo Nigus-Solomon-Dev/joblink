@@ -18,10 +18,14 @@ import { isApiError } from "@/types/api";
 export function JobSearchScreen() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("query") ?? "";
+  const initialCategoryId = searchParams.get("categoryId") ?? "";
+  const initialLocation = searchParams.get("location") ?? "";
 
   const [filters, setFilters] = useState<JobFiltersValue>({
     ...emptyJobFilters,
     query: initialQuery,
+    categoryId: initialCategoryId,
+    location: initialLocation,
   });
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("relevance");
