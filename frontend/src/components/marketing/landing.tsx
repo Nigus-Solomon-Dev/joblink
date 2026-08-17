@@ -1,22 +1,17 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
+import { useAuth } from "@/hooks/use-auth";
 import { useCompanies } from "@/hooks/use-companies";
-import { useCategoriesWithJobs, useTopSkills } from "@/hooks/use-categories";
+import { useCategoriesWithJobs } from "@/hooks/use-categories";
 import { useFeaturedJobs } from "@/hooks/use-jobs";
 import { CompanyLogo } from "@/components/companies/company-logo";
 import { JobCard } from "@/components/jobs/job-card";
 import { JobCardListSkeleton } from "@/components/jobs/job-card-skeleton";
-import { Button, Input, Reveal, Skeleton } from "@/components/ui";
+import { Button, Reveal, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/cn";
-
-const heroSearchSchema = z.object({ query: z.string().trim().min(1, "Type a job title or keyword") });
-type HeroSearchValues = z.infer<typeof heroSearchSchema>;
 
 const steps = [
   {
@@ -50,22 +45,12 @@ const features = [
 
 export function Landing() {
   const router = useRouter();
+  const { status } = useAuth();
   const featured = useFeaturedJobs();
   const categories = useCategoriesWithJobs();
-  const skills = useTopSkills(12);
   const companies = useCompanies({ isVerified: true, limit: 8 });
   const featuredJobs = featured.data?.jobs ?? [];
   const trustedCompanies = companies.data?.data ?? [];
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<HeroSearchValues>({ resolver: zodResolver(heroSearchSchema) });
-
-  const onSubmit = handleSubmit(({ query }) => {
-    router.push(`/jobs?query=${encodeURIComponent(query)}`);
-  });
 
   return (
     <div>
@@ -75,69 +60,58 @@ export function Landing() {
         <div className="pointer-events-none absolute -left-32 bottom-0 size-80 rounded-full bg-primary-200/20 blur-3xl" aria-hidden="true" />
 
         <div className="container-site relative py-20 sm:py-28">
-          <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto max-w-3xl text-center">
             <p
-              className="animate-rise text-xs font-semibold uppercase tracking-[0.2em] text-primary-600"
+              className="animate-rise text-xs font-bold uppercase tracking-[0.35em] text-primary-600"
               style={{ animationDelay: "80ms" }}
             >
-              Ethiopia&rsquo;s job marketplace
+              One Platform&nbsp;&nbsp;·&nbsp;&nbsp;Better Opportunities
             </p>
             <h1
-              className="animate-rise mt-4 text-balance text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl"
+              className="animate-rise mt-5 text-balance text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-6xl"
               style={{ animationDelay: "180ms" }}
             >
-              Find work that&rsquo;s <span className="text-accent-700">worth your week.</span>
+              Your skills deserve the right opportunity.
             </h1>
+
             <p
-              className="animate-rise mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-slate-600 sm:text-lg"
-              style={{ animationDelay: "300ms" }}
+              className="animate-rise mt-6 flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent-700 sm:text-sm"
+              style={{ animationDelay: "280ms" }}
             >
-              Browse verified jobs across Addis Ababa and beyond — with transparent salaries and a
-              simple way to apply.
+              <span>Search</span>
+              <span className="text-slate-400" aria-hidden="true">·</span>
+              <span>Connect</span>
+              <span className="text-slate-400" aria-hidden="true">·</span>
+              <span>Apply</span>
             </p>
 
-            <form
-              onSubmit={onSubmit}
-              className="animate-rise mx-auto mt-8 flex max-w-xl flex-col gap-2 rounded-xl border border-border bg-surface p-2 shadow-popover sm:flex-row"
-              style={{ animationDelay: "420ms" }}
-              noValidate
+            <p
+              className="animate-rise mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-slate-600 sm:text-lg"
+              style={{ animationDelay: "380ms" }}
             >
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="search"
-                  placeholder="Job title, keyword, or company…"
-                  className="border-0 pl-9 shadow-none focus:ring-0"
-                  aria-label="Search for jobs"
-                  {...register("query")}
-                />
-              </div>
-              <Button type="submit" size="lg" className="shrink-0">
-                Search jobs
-                <ArrowRight className="size-4" />
-              </Button>
-            </form>
-            {errors.query && (
-              <p role="alert" className="mt-2 text-sm font-medium text-danger-600">
-                {errors.query.message}
-              </p>
-            )}
+              JobLink brings talented people and ambitious companies together.
+            </p>
 
             <div
-              className="animate-rise mt-6 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-500"
-              style={{ animationDelay: "540ms" }}
+              className="animate-rise mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+              style={{ animationDelay: "480ms" }}
             >
-              <span>Popular:</span>
-              {skills.data?.skills.slice(0, 5).map((skill) => (
-                <button
-                  key={skill._id}
-                  type="button"
-                  onClick={() => router.push(`/jobs?query=${encodeURIComponent(skill.name)}`)}
-                  className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-primary-700 transition-colors hover:border-primary-300 hover:bg-primary-50"
-                >
-                  {skill.name}
-                </button>
-              ))}
+              <Button
+                size="lg"
+                onClick={() => router.push("/jobs")}
+                className="w-full shadow-primary sm:w-auto"
+              >
+                Explore Opportunities
+                <ArrowRight className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => router.push("/register?role=employer")}
+                className="w-full border-primary-300 bg-surface/70 text-primary-700 hover:bg-primary-50 sm:w-auto"
+              >
+                Find Talent
+              </Button>
             </div>
           </div>
         </div>
@@ -213,7 +187,7 @@ export function Landing() {
                     <button
                       key={category._id}
                       type="button"
-                      onClick={() => router.push(`/jobs?query=${encodeURIComponent(category.name)}`)}
+                      onClick={() => router.push(`/jobs?categoryId=${encodeURIComponent(category._id)}`)}
                       className="group flex items-center justify-between gap-2 rounded-xl border border-border bg-surface px-4 py-4 text-left shadow-card transition-colors hover:border-primary-300 hover:bg-primary-50"
                     >
                       <span className="text-sm font-medium text-foreground group-hover:text-primary-800">
@@ -276,36 +250,38 @@ export function Landing() {
         </Reveal>
       </section>
 
-      {/* Employer CTA */}
-      <section className="border-t border-border bg-espresso-950">
-        <div className="container-site flex flex-col items-start justify-between gap-6 py-14 sm:flex-row sm:items-center">
-          <div className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-500">For employers</p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">Hiring in Addis? Post a job in minutes.</h2>
-            <p className="mt-3 text-sm leading-relaxed text-slate-400">
-              Create a company page, publish your first role, and start receiving qualified applications today.
-            </p>
+      {/* Employer CTA — only for signed-out visitors; land them on employer registration. */}
+      {status === "unauthenticated" && (
+        <section className="border-t border-border bg-espresso-950">
+          <div className="container-site flex flex-col items-start justify-between gap-6 py-14 sm:flex-row sm:items-center">
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-500">For employers</p>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">Hiring in Addis? Post a job in minutes.</h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                Create a company page, publish your first role, and start receiving qualified applications today.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => router.push("/register?role=employer")}
+                className="bg-accent-500 text-espresso-950 shadow-primary hover:bg-accent-600"
+              >
+                Post a job
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => router.push("/register?role=employer")}
+                className="border-white/20 bg-transparent text-white hover:bg-white/10"
+              >
+                Join as an employer
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => router.push("/register")}
-              className="bg-accent-500 text-espresso-950 shadow-primary hover:bg-accent-600"
-            >
-              Post a job
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => router.push("/register")}
-              className="border-white/20 bg-transparent text-white hover:bg-white/10"
-            >
-              Join as an employer
-            </Button>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
