@@ -375,21 +375,63 @@ class JobService {
 
     const excludedIds = [...appliedJobIds, ...savedJobIds];
 
-    const queryObj = {
+    const match = {
       status: JOB_STATUS.PUBLISHED,
       _id: { $nin: excludedIds },
     };
 
-    if (user.skills && user.skills.length > 0) {
-      queryObj.skills = { $in: user.skills };
+    const userSkillIds = user.skills || [];
+
+    let rankedIds = [];
+    let skillMatchMap = new Map();
+    if (userSkillIds.length === 0) {
+      const recent = await Job.find(match)
+        .sort({ featured: -1, publishedAt: -1 })
+        .limit(limit)
+        .select('_id')
+        .lean();
+      rankedIds = recent.map((job) => job._id);
+    } else {
+      const ranked = await Job.aggregate([
+        { $match: { ...match, skills: { $in: userSkillIds } } },
+        {
+          $addFields: {
+            skillMatchCount: { $size: { $setIntersection: ['$skills', userSkillIds] } },
+          },
+        },
+        { $sort: { skillMatchCount: -1, featured: -1, publishedAt: -1 } },
+        { $limit: limit },
+        { $project: { _id: 1, skillMatchCount: 1 } },
+      ]);
+      rankedIds = ranked.map((job) => job._id);
+      ranked.forEach((job) => skillMatchMap.set(job._id.toString(), job.skillMatchCount));
     }
 
-    return Job.find(queryObj)
+    if (rankedIds.length === 0) {
+      if (userSkillIds.length > 0) {
+        const recent = await Job.find(match)
+          .sort({ featured: -1, publishedAt: -1 })
+          .limit(limit)
+          .select('_id')
+          .lean();
+        rankedIds = recent.map((job) => job._id);
+      }
+      if (rankedIds.length === 0) return [];
+    }
+
+    const jobs = await Job.find({ _id: { $in: rankedIds } })
       .populate('companyId', 'name slug logo isVerified')
       .populate('categoryId', 'name slug')
-      .sort({ publishedAt: -1 })
-      .limit(limit)
+      .populate('skills', 'name slug category')
       .lean();
+
+    const rankOrder = new Map(rankedIds.map((id, index) => [id.toString(), index]));
+    jobs.sort((a, b) => rankOrder.get(a._id.toString()) - rankOrder.get(b._id.toString()));
+
+    return jobs.map((job) => ({
+      ...job,
+      skillMatchCount: skillMatchMap.get(job._id.toString()) ?? 0,
+    }));
   }
 
   async getJobStats(jobId) {
