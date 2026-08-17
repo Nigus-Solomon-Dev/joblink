@@ -1,4 +1,5 @@
 // Express app setup
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -123,6 +124,9 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/uploads', fileUploadRoutes);
 app.use('/api/v1/emails', emailRoutes);
 app.use('/api/v1/telegram', telegramBotRoutes);
+
+// Locally-stored uploads (fallback when Cloudinary is not configured)
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // 404 handler
 app.use(notFound);
