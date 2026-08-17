@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useAllSkills } from "@/hooks/use-categories";
 import { authApi } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/cn";
 import {
   Alert,
   Button,
@@ -22,12 +24,16 @@ import { isApiError } from "@/types/api";
 export function ProfileForm() {
   const { user, status, refetchUser } = useAuth();
   const { toast } = useToast();
+  const allSkills = useAllSkills(500);
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [skillQuery, setSkillQuery] = useState("");
 
   const {
+    control,
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -38,8 +44,24 @@ export function ProfileForm() {
       location: user?.location ?? "",
       website: user?.website ?? "",
       linkedin: user?.linkedin ?? "",
+      skills: user?.skills ?? [],
     },
   });
+
+  const selectedSkills = useWatch({ control, name: "skills" }) ?? [];
+  const skillOptions = allSkills.data?.data ?? [];
+  const skillSearch = skillQuery.trim().toLowerCase();
+  const visibleSkills = skillSearch
+    ? skillOptions.filter((skill) => skill.name.toLowerCase().includes(skillSearch))
+    : skillOptions;
+
+  const toggleSkill = (id: string) => {
+    if (selectedSkills.includes(id)) {
+      setValue("skills", selectedSkills.filter((s) => s !== id));
+    } else {
+      setValue("skills", [...selectedSkills, id]);
+    }
+  };
 
   if (status === "loading" || !user) {
     return (
@@ -135,6 +157,78 @@ export function ProfileForm() {
           className="min-h-28"
           {...register("bio")}
         />
+      </FormField>
+
+      <FormField
+        label="Skills"
+        htmlFor="profile-skills"
+        error={errors.skills?.message}
+        hint="Add the skills you offer — we use them to recommend matching jobs."
+      >
+        <div className="space-y-3">
+          {selectedSkills.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedSkills.map((id) => {
+                const skill = skillOptions.find((option) => option._id === id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => toggleSkill(id)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
+                    aria-label={`Remove ${skill?.name ?? id}`}
+                  >
+                    {skill?.name ?? id}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <Input
+            id="profile-skills"
+            value={skillQuery}
+            onChange={(event) => setSkillQuery(event.target.value)}
+            placeholder="Search skills to add…"
+            aria-label="Search skills"
+          />
+
+          <div className="max-h-56 overflow-y-auto rounded-lg border border-border bg-surface-muted/50 p-2">
+            {allSkills.isLoading ? (
+              <div className="space-y-2 p-2">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-6 w-64" />
+                <Skeleton className="h-6 w-48" />
+              </div>
+            ) : visibleSkills.length === 0 ? (
+              <p className="p-2 text-sm text-slate-500">
+                No skills match &ldquo;{skillQuery}&rdquo;.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {visibleSkills.slice(0, 150).map((skill) => {
+                  const selected = selectedSkills.includes(skill._id);
+                  return (
+                    <button
+                      key={skill._id}
+                      type="button"
+                      onClick={() => toggleSkill(skill._id)}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                        selected
+                          ? "border-primary-600 bg-primary-600 text-white"
+                          : "border-border-strong bg-surface text-slate-700 hover:border-primary-300 hover:bg-primary-50",
+                      )}
+                    >
+                      {skill.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </FormField>
 
       <div className="flex justify-end gap-3">
