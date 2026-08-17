@@ -36,7 +36,7 @@ export async function getMeRequest(): Promise<{ user: User }> {
 }
 
 export async function updateProfileRequest(
-  data: Partial<Pick<User, "name" | "phone" | "bio" | "location" | "website" | "linkedin">>,
+  data: Partial<Pick<User, "name" | "phone" | "bio" | "location" | "website" | "linkedin" | "skills">>,
 ): Promise<{ user: User }> {
   return unwrap<{ user: User }>(await http.patch("/auth/profile", data));
 }
