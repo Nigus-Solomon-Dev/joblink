@@ -185,10 +185,25 @@ export function SeekerDashboard() {
                 Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-40 rounded-xl" />)
               ) : recommended.data?.jobs.length === 0 ? (
                 <p className="text-sm text-slate-500">
-                  No recommendations yet — add skills to your profile to get better matches.
+                  No recommendations yet —{" "}
+                  <Link href="/profile" className="font-medium text-primary-700 hover:underline">
+                    add skills to your profile
+                  </Link>{" "}
+                  to get better matches.
                 </p>
               ) : (
-                (recommended.data?.jobs ?? []).map((job) => <JobCard key={job._id} job={job} />)
+                (recommended.data?.jobs ?? []).map((job) => (
+                  <div key={job._id} className="relative">
+                    {typeof job.skillMatchCount === "number" &&
+                      job.skillMatchCount > 0 && (
+                        <span className="absolute -top-2 right-3 z-10 rounded-full bg-accent-700 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
+                          {job.skillMatchCount}{" "}
+                          {job.skillMatchCount === 1 ? "skill" : "skills"} match you
+                        </span>
+                      )}
+                    <JobCard key={job._id} job={job} />
+                  </div>
+                ))
               )}
             </div>
           </div>
