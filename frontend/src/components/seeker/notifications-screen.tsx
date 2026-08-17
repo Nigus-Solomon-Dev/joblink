@@ -63,11 +63,17 @@ const NOTIFICATION_ICONS = {
 
 function notificationHref(notification: AppNotification): string | null {
   const entity = notification.relatedEntity;
-  if (!entity) return null;
-  if (entity.entityType === "job") return `/jobs/${entity.entityId}`;
-  if (entity.entityType === "application") return "/applications";
-  if (entity.entityType === "company") return "/companies";
-  if (entity.entityType === "conversation") return "/messages";
+  if (entity) {
+    if (entity.entityType === "job") return `/jobs/${entity.entityId}`;
+    if (entity.entityType === "application") return "/applications";
+    if (entity.entityType === "company") return "/companies";
+    if (entity.entityType === "conversation") return `/messages?conversation=${encodeURIComponent(entity.entityId)}`;
+  }
+  const conversationId = notification.data?.conversationId;
+  if (notification.type === "message" && conversationId) {
+    return `/messages?conversation=${encodeURIComponent(conversationId as string)}`;
+  }
+  if (notification.type === "message") return "/messages";
   return null;
 }
 
