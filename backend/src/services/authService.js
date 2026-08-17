@@ -295,7 +295,7 @@ class AuthService {
 
   async updateProfile(userId, updateData) {
     const User = require('../models').User;
-    const allowedFields = ['name', 'phone', 'bio', 'location', 'website', 'linkedin', 'avatar'];
+    const allowedFields = ['name', 'phone', 'bio', 'location', 'website', 'linkedin', 'avatar', 'skills'];
     const updates = {};
     
     Object.keys(updateData).forEach(key => {
