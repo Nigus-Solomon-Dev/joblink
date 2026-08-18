@@ -19,7 +19,7 @@ class SavedJobService {
 
     const existing = await SavedJob.findOne({ userId, jobId });
     if (existing) {
-      throw new AppError('Job already saved', 400);
+      return existing;
     }
 
     const savedJob = await SavedJob.create({
@@ -42,7 +42,7 @@ class SavedJobService {
 
     const savedJob = await SavedJob.findOneAndDelete({ userId, jobId });
     if (!savedJob) {
-      throw new NotFoundError('Saved job not found');
+      return true;
     }
 
     await Job.findByIdAndUpdate(jobId, { $inc: { savesCount: -1 } });
