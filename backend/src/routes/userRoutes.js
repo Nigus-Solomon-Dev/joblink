@@ -71,6 +71,10 @@ router.post(
   userController.uploadAvatar
 );
 
+router.post('/me/telegram/link', userController.generateTelegramLinkCode);
+
+router.delete('/me/telegram/link', userController.unlinkTelegram);
+
 router.delete('/me', userController.deleteAccount);
 
 // Admin stats/search routes (registered before /:id to avoid being shadowed)
