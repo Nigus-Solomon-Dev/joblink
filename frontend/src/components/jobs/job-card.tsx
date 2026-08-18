@@ -83,8 +83,8 @@ export function JobCard({ job, className }: JobCardProps) {
 
       {job.skills && job.skills.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-          {job.skills.slice(0, 3).map((skill) => (
-            <span key={skill._id} className="rounded-md bg-surface-muted px-2 py-1 text-slate-600">
+          {job.skills.slice(0, 3).map((skill, index) => (
+            <span key={skill._id ?? `${skill.name}-${index}`} className="rounded-md bg-surface-muted px-2 py-1 text-slate-600">
               {skill.name}
             </span>
           ))}
