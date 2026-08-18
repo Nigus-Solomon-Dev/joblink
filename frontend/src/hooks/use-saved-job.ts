@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { savedJobsApi } from "@/lib/api";
+import type { Paginated } from "@/types/api";
+import type { JobListItem } from "@/types";
 
 export function useIsSaved(jobId: string) {
   const { status } = useAuth();
@@ -35,10 +37,25 @@ export function useSaveJobToggle(jobId: string) {
     },
     onError: () => {
       queryClient.setQueryData(["saved", "is-saved", jobId], { isSaved });
+      queryClient.invalidateQueries({ queryKey: ["saved", "is-saved", jobId] });
       toast("error", "Something went wrong", "Please try again.");
     },
     onSuccess: (_data, nextState) => {
+      if (!nextState) {
+        queryClient.setQueriesData<Paginated<JobListItem>>(
+          { queryKey: ["saved-jobs"] },
+          (old) =>
+            old
+              ? {
+                  ...old,
+                  data: old.data.filter((job) => job._id !== jobId),
+                  meta: { ...old.meta, total: Math.max(0, old.meta.total - 1) },
+                }
+              : old,
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["saved-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["jobseeker", "dashboard"] });
       toast("success", nextState ? "Job saved" : "Removed from saved jobs");
     },
   });
