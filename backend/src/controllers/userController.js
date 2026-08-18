@@ -78,6 +78,18 @@ class UserController {
     res.status(200).json(response);
   });
 
+  generateTelegramLinkCode = catchAsync(async (req, res, next) => {
+    const result = await userService.generateTelegramLinkCode(req.user.id);
+    const response = ApiResponse.success(result, 'Telegram link code generated');
+    res.status(200).json(response);
+  });
+
+  unlinkTelegram = catchAsync(async (req, res, next) => {
+    const user = await userService.unlinkTelegram(req.user.id);
+    const response = ApiResponse.success({ user }, 'Telegram disconnected');
+    res.status(200).json(response);
+  });
+
   uploadAvatar = catchAsync(async (req, res, next) => {
     if (!req.file) {
       throw new AppError('No file uploaded', 400);
@@ -129,8 +141,7 @@ class UserController {
     const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
     fs.writeFileSync(path.join(avatarsDir, filename), req.file.buffer);
 
-    const baseUrl = process.env.PUBLIC_UPLOAD_BASE || `${req.protocol}://${req.get('host')}`;
-    return `${baseUrl}/uploads/avatars/${filename}`;
+    return `/uploads/avatars/${filename}`;
   }
 
   deleteAccount = catchAsync(async (req, res, next) => {
