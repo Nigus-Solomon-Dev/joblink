@@ -4,13 +4,12 @@ const { JOB_STATUS } = require('../constants');
 const Logger = require('../utils/logger');
 const { Telegraf } = require('telegraf');
 const Job = require('../models').Job;
-const Application = require('../models').Application;
 
 class TelegramBotService {
   constructor() {
     this.bot = null;
     this.isConfigured = false;
-    this.initialized = false;
+    this.started = false;
     this.initializeBot();
   }
 
@@ -23,6 +22,9 @@ class TelegramBotService {
     try {
       this.bot = new Telegraf(TELEGRAM_BOT_TOKEN);
       this.setupCommands();
+      this.bot.catch((err) => {
+        Logger.error('Telegram bot error', { error: err?.message || err });
+      });
       this.isConfigured = true;
       Logger.info('Telegram bot initialized successfully');
     } catch (error) {
@@ -37,7 +39,13 @@ class TelegramBotService {
     this.bot.start((ctx) => {
       ctx.reply(`Welcome to JobLink Bot! 🎉
 
+Link your account to receive job alerts:
+1. Open https://${BASE_URL || 'localhost:3000'} → Profile → Telegram notifications
+2. Tap "Generate link code"
+3. Send that code here: /link <code>
+
 Available commands:
+/link <code> - Link your JobLink account
 /search - Search for jobs
 /new - Get latest job postings
 /status - Check your application status
@@ -50,24 +58,64 @@ Send /help for more information.`);
     this.bot.command('help', (ctx) => {
       ctx.reply(`JobLink Bot Help
 
-📁 Job Search Commands:
-  /search query - Search jobs by keyword
-  /new - View latest job postings
-  /categories - View available job categories
-
-📤 Subscription:
+🔗 Linking:
+  /link <code> - Link your JobLink account (get a code from your profile)
   /subscribe - Enable job notifications
   /unsubscribe - Disable job notifications
+
+📁 Job Search Commands:
+  /search <query> - Search jobs by keyword
+  /new - View latest job postings
+  /categories - View available job categories
 
 📊 Other:
   /status - Check your application status
   /help - Show this help message`);
     });
 
+    this.bot.command('link', async (ctx) => {
+      const userId = ctx.from?.id;
+      if (!userId) {
+        ctx.reply('Unable to identify your Telegram account.');
+        return;
+      }
+
+      const code = String(ctx.message?.text?.split(/\s+/)[1] || '')
+        .trim()
+        .toUpperCase();
+
+      if (!code) {
+        ctx.reply('Usage: /link <code>\n\nGet a code from your JobLink profile → Telegram notifications.');
+        return;
+      }
+
+      try {
+        const User = require('../models').User;
+        const user = await User.findOne({ telegramLinkToken: code });
+
+        if (!user || !user.telegramLinkTokenExpiresAt || user.telegramLinkTokenExpiresAt < Date.now()) {
+          ctx.reply('That link code is invalid or has expired. Generate a new one from your profile.');
+          return;
+        }
+
+        user.telegramId = String(userId);
+        user.telegramSubscribed = true;
+        user.telegramLinkToken = null;
+        user.telegramLinkTokenExpiresAt = null;
+        await user.save();
+
+        ctx.reply('✅ Account linked! You will now receive job notifications here.\n\nUse /unsubscribe to turn them off.');
+        Logger.info('Telegram account linked', { userId, telegramId: String(userId) });
+      } catch (error) {
+        Logger.error('Failed to link Telegram account', { error: error.message });
+        ctx.reply('Something went wrong while linking. Please try again.');
+      }
+    });
+
     this.bot.command('categories', async (ctx) => {
       const Category = require('../models').Category;
       const categories = await Category.find().limit(10).lean();
-      
+
       if (categories.length === 0) {
         ctx.reply('No categories available at the moment.');
         return;
@@ -103,28 +151,21 @@ Send /help for more information.`);
 
     this.bot.command('status', async (ctx) => {
       ctx.replyWithChatAction('typing');
-      
-      const userId = ctx.from?.id;
-      if (!userId) {
-        ctx.reply('Unable to identify user. Please use the web app for detailed application status.');
-        return;
-      }
 
-      const user = require('../models').User.findById(userId);
+      const User = require('../models').User;
+      const Application = require('../models').Application;
+      const user = await User.findOne({ telegramId: String(ctx.from?.id || '') });
+
       if (!user) {
-        ctx.reply('User not found. Please login through the web app first.');
+        ctx.reply('Your Telegram account is not linked. Link it with /link <code> first.');
         return;
       }
 
-      const appsCount = await Application.countDocuments({ applicantId: userId });
-      const pendingApps = await Application.countDocuments({ 
-        applicantId: userId, 
-        status: 'pending' 
-      });
-      const acceptedApps = await Application.countDocuments({ 
-        applicantId: userId, 
-        status: 'accepted' 
-      });
+      const [appsCount, pendingApps, acceptedApps] = await Promise.all([
+        Application.countDocuments({ applicantId: user._id }),
+        Application.countDocuments({ applicantId: user._id, status: 'pending' }),
+        Application.countDocuments({ applicantId: user._id, status: 'accepted' }),
+      ]);
 
       ctx.reply(`Your Application Status:
 
@@ -135,8 +176,23 @@ Send /help for more information.`);
 For detailed status, visit your dashboard on the web app.`);
     });
 
-    this.bot.hears(/\/search (.+)/, async (ctx) => {
-      const query = ctx.match[1];
+    this.bot.command('subscribe', async (ctx) => {
+      await this.handleSubscribe(ctx);
+    });
+
+    this.bot.command('unsubscribe', async (ctx) => {
+      await this.handleUnsubscribe(ctx);
+    });
+
+    this.bot.command('search', async (ctx) => {
+      const raw = ctx.message?.text || '';
+      const query = raw.replace(/^\/search(?:@\w+)?\s*/i, '').trim();
+
+      if (!query) {
+        ctx.reply('Usage: /search <keyword>\n\nExample: /search developer');
+        return;
+      }
+
       await this.searchJobs(ctx, query);
     });
 
@@ -146,11 +202,11 @@ For detailed status, visit your dashboard on the web app.`);
 
     this.bot.on('text', async (ctx) => {
       const text = ctx.message?.text?.toLowerCase() || '';
-      
+
       if (text.includes('help') || text.includes('start')) {
         return;
       }
-      
+
       if (text.includes('subscribe') || text.includes('notification')) {
         await this.handleSubscribe(ctx);
       } else if (text.includes('unsubscribe') || text.includes('stop')) {
@@ -160,14 +216,14 @@ For detailed status, visit your dashboard on the web app.`);
       }
     });
 
-    this.on('polling_error', (err) => {
-      Logger.error('Telegram bot polling error', { error: err.message });
+    this.bot.on('polling_error', (err) => {
+      Logger.error('Telegram bot polling error', { error: err?.message || err });
     });
   }
 
   async searchJobs(ctx, query) {
     ctx.replyWithChatAction('typing');
-    
+
     const searchResult = await Job.find({
       title: { $regex: query, $options: 'i' },
       status: JOB_STATUS.PUBLISHED
@@ -195,10 +251,11 @@ For detailed status, visit your dashboard on the web app.`);
 
   async handleSubscribe(ctx) {
     const userId = ctx.from?.id;
-    const user = await require('../models').User.findById(userId);
-    
+    const User = require('../models').User;
+    const user = await User.findOne({ telegramId: String(userId || '') });
+
     if (!user) {
-      ctx.reply('Please login through the web app first.');
+      ctx.reply('Your Telegram account is not linked to any JobLink account.\n\nLink it first:\n1. Open your JobLink profile → Telegram notifications\n2. Generate a link code\n3. Send it here: /link <code>');
       return;
     }
 
@@ -208,7 +265,6 @@ For detailed status, visit your dashboard on the web app.`);
     }
 
     user.telegramSubscribed = true;
-    user.telegramId = userId;
     await user.save();
 
     ctx.reply('✅ Successfully subscribed to job notifications!');
@@ -217,10 +273,11 @@ For detailed status, visit your dashboard on the web app.`);
 
   async handleUnsubscribe(ctx) {
     const userId = ctx.from?.id;
-    const user = await require('../models').User.findById(userId);
-    
+    const User = require('../models').User;
+    const user = await User.findOne({ telegramId: String(userId || '') });
+
     if (!user) {
-      ctx.reply('User not found.');
+      ctx.reply('Your Telegram account is not linked to any JobLink account.');
       return;
     }
 
@@ -235,19 +292,21 @@ For detailed status, visit your dashboard on the web app.`);
     ctx.reply('🔕 Successfully unsubscribed from job notifications.');
   }
 
-  async sendNotification(userId, message) {
+  async sendNotification(userId, message, parseMode = null) {
     if (!this.isConfigured) {
       Logger.warn('Cannot send Telegram notification - bot not configured');
       return { success: false, message: 'Bot not configured' };
     }
 
     try {
-      const user = await require('../models').User.findById(userId);
+      const User = require('../models').User;
+      const user = await User.findById(userId);
       if (!user || !user.telegramId || !user.telegramSubscribed) {
         return { success: false, message: 'User not subscribed' };
       }
 
-      await this.bot.telegram.sendMessage(user.telegramId, message, { parse_mode: 'Markdown' });
+      const options = parseMode ? { parse_mode: parseMode } : {};
+      await this.bot.telegram.sendMessage(user.telegramId, message, options);
       Logger.info('Telegram notification sent', { userId, telegramId: user.telegramId });
       return { success: true };
     } catch (error) {
@@ -257,23 +316,53 @@ For detailed status, visit your dashboard on the web app.`);
   }
 
   async sendJobAlert(userId, job) {
-    if (job.companyId) {
-      const company = await require('../models').Company.findById(job.companyId).lean();
-      
-      const message = `🎉 NEW JOB ALERT!
+    const message = this.buildJobAlertMessage(job);
+    return this.sendNotification(userId, message, 'HTML');
+  }
 
-📍 <b>${job.title}</b>
-🏢 Company: ${company?.name || 'N/A'}
-📊 Type: ${job.type}
-💰 Salary: ${job.salaryRange || 'Negotiable'}
-📍 Location: ${job.location || 'Remote'}
+  buildJobAlertMessage(job) {
+    const companyName = job.companyId && typeof job.companyId === 'object'
+      ? (job.companyId.name || 'N/A')
+      : 'N/A';
+    const location = job.location || 'Remote';
 
-${job.description ? job.description.substring(0, 150) + '...' : ''}
+    return `🎉 NEW JOB ALERT!
 
-Apply now: ${BASE_URL}/jobs/${job.slug}`;
+📍 <b>${this.htmlEscape(job.title || 'Job post')}</b>
+🏢 Company: ${this.htmlEscape(companyName)}
+📊 Type: ${this.htmlEscape(job.type || 'N/A')}
+💰 Salary: ${this.htmlEscape(job.salaryRange || 'Negotiable')}
+📍 Location: ${this.htmlEscape(location)}
 
-      return this.sendNotification(userId, message);
-    }
+${job.description ? this.htmlEscape(job.description.substring(0, 150)) + '...' : ''}
+
+Apply now: ${BASE_URL}/jobs/${job.slug || job._id}`;
+  }
+
+  htmlEscape(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  async notifySubscribedUsers(job) {
+    if (!this.isConfigured) return { success: false, message: 'Bot not configured' };
+
+    const User = require('../models').User;
+    const subscribedUsers = await User.find({
+      telegramSubscribed: true,
+      telegramId: { $exists: true, $ne: null },
+    });
+
+    const results = await Promise.all(
+      subscribedUsers.map(user => this.sendJobAlert(user._id, job))
+    );
+
+    const successful = results.filter(r => r.success).length;
+    const failed = results.length - successful;
+
+    return { success: true, total: results.length, successful, failed };
   }
 
   getWebhookUpdate() {
@@ -288,6 +377,41 @@ Apply now: ${BASE_URL}/jobs/${job.slug}`;
         res.status(500).send('Error');
       }
     };
+  }
+
+  async start() {
+    if (!this.bot || !this.isConfigured || this.started) {
+      return { started: false, reason: 'not-configured' };
+    }
+
+    if (TELEGRAM_WEBHOOK_URL) {
+      try {
+        await this.bot.telegram.setWebhook(`${TELEGRAM_WEBHOOK_URL}/bot`);
+        Logger.info('Telegram webhook configured', { url: TELEGRAM_WEBHOOK_URL });
+        this.started = true;
+        return { mode: 'webhook', started: true };
+      } catch (error) {
+        Logger.error('Failed to setup webhook - falling back to polling', { error: error.message });
+      }
+    }
+
+    try {
+      this.bot.launch({ dropPendingUpdates: true });
+      this.started = true;
+      Logger.info('Telegram bot started in polling mode');
+      return { mode: 'polling', started: true };
+    } catch (error) {
+      Logger.error('Failed to launch Telegram bot', { error: error.message });
+      return { started: false, error: error.message };
+    }
+  }
+
+  async stop() {
+    if (this.bot && this.started) {
+      this.bot.stop();
+      this.started = false;
+      Logger.info('Telegram bot stopped');
+    }
   }
 
   async setupWebhook() {
@@ -306,46 +430,7 @@ Apply now: ${BASE_URL}/jobs/${job.slug}`;
     }
   }
 
-  async pollForNewJobs() {
-    if (!this.isConfigured) return [];
-
-    const recentJobs = await Job.find({
-      status: JOB_STATUS.PUBLISHED,
-      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
-    })
-      .sort('-createdAt')
-      .lean();
-
-    return recentJobs;
-  }
-
-  async broadcast(message) {
-    if (!this.isConfigured) {
-      return { success: false, message: 'Bot not configured' };
-    }
-
-    const subscribedUsers = await require('../models').User.find({
-      telegramSubscribed: true,
-      telegramId: { $exists: true, $ne: null }
-    });
-
-    const results = await Promise.all(
-      subscribedUsers.map(user => this.sendNotification(user._id, message))
-    );
-
-    const successful = results.filter(r => r.success).length;
-    const failed = results.filter(r => !r.success).length;
-
-    return {
-      success: true,
-      message: 'Broadcast completed',
-      total: results.length,
-      successful,
-      failed
-    };
-  }
-
-  getBotInfo() {
+  async getBotInfo() {
     if (!this.isConfigured) {
       return { configured: false };
     }
