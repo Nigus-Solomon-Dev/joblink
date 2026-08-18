@@ -156,6 +156,10 @@ class JobService {
       .populate('categoryId', 'name slug')
       .populate('skills', 'name slug');
 
+    if (updates.status === JOB_STATUS.PUBLISHED && job.status !== JOB_STATUS.PUBLISHED) {
+      await this._notifyTelegramSubscribers(updatedJob);
+    }
+
     return updatedJob;
   }
 
@@ -202,7 +206,21 @@ class JobService {
       throw new AppError('You are not authorized to publish this job', 403);
     }
 
-    return job.publish();
+    await job.publish();
+    await job.populate('companyId', 'name');
+    await this._notifyTelegramSubscribers(job);
+
+    return job;
+  }
+
+  async _notifyTelegramSubscribers(job) {
+    try {
+      const telegramBotService = require('./telegramBotService');
+      await telegramBotService.notifySubscribedUsers(job);
+    } catch (error) {
+      const Logger = require('../utils/logger');
+      Logger.error('Failed to notify Telegram subscribers about job', { error: error.message });
+    }
   }
 
   async closeJob(jobId, userId) {
