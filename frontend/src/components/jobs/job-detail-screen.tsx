@@ -201,9 +201,9 @@ export function JobDetailScreen({ jobId }: JobDetailScreenProps) {
 
             {job.skills && job.skills.length > 0 && (
               <div className="mt-5 flex flex-wrap gap-1.5 text-xs">
-                {job.skills.map((skill) => (
+                {job.skills.map((skill, index) => (
                   <span
-                    key={skill._id}
+                    key={skill._id ?? `${skill.name}-${index}`}
                     className="rounded-md bg-surface-muted px-2 py-1 text-slate-600"
                   >
                     {skill.name}
