@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useAllSkills } from "@/hooks/use-categories";
@@ -20,9 +21,24 @@ import {
 } from "@/components/ui";
 import { cleanProfilePayload, profileSchema, type ProfileFormValues } from "@/lib/validations/auth";
 import { isApiError } from "@/types/api";
+import type { User } from "@/types";
 
-export function ProfileForm() {
-  const { user, status, refetchUser } = useAuth();
+// Skeleton shown while auth is loading
+function ProfileFormSkeleton() {
+  return (
+    <Card className="space-y-4">
+      <Skeleton className="h-5 w-40" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-24 w-full" />
+    </Card>
+  );
+}
+
+// Inner form — only mounts once user is confirmed loaded, so defaultValues are correct
+function ProfileFormInner({ user }: { user: User }) {
+  const { refetchUser } = useAuth();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const allSkills = useAllSkills(500);
   const [formError, setFormError] = useState<string | null>(null);
@@ -37,14 +53,15 @@ export function ProfileForm() {
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    values: {
-      name: user?.name ?? "",
-      phone: user?.phone ?? "",
-      bio: user?.bio ?? "",
-      location: user?.location ?? "",
-      website: user?.website ?? "",
-      linkedin: user?.linkedin ?? "",
-      skills: user?.skills ?? [],
+    defaultValues: {
+      name: user.name ?? "",
+      phone: user.phone ?? "",
+      bio: user.bio ?? "",
+      location: user.location ?? "",
+      website: user.website ?? "",
+      linkedin: user.linkedin ?? "",
+      // Normalize to plain strings — user.skills may contain Mongoose ObjectId objects
+      skills: (user.skills ?? []).map((s) => (typeof s === "string" ? s : String(s))),
     },
   });
 
@@ -57,28 +74,19 @@ export function ProfileForm() {
 
   const toggleSkill = (id: string) => {
     if (selectedSkills.includes(id)) {
-      setValue("skills", selectedSkills.filter((s) => s !== id));
+      setValue("skills", selectedSkills.filter((s) => s !== id), { shouldDirty: true });
     } else {
-      setValue("skills", [...selectedSkills, id]);
+      setValue("skills", [...selectedSkills, id], { shouldDirty: true });
     }
   };
-
-  if (status === "loading" || !user) {
-    return (
-      <Card className="space-y-4">
-        <Skeleton className="h-5 w-40" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </Card>
-    );
-  }
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
       await authApi.updateProfileRequest(cleanProfilePayload(values));
       await refetchUser();
+      // invalidate skill-gap and other dashboard queries so they refetch with updated skills
+      await queryClient.invalidateQueries({ queryKey: ["jobseeker", "dashboard"] });
       setSaved(true);
       toast("success", "Profile saved", "Your personal information was updated.");
     } catch (error) {
@@ -238,4 +246,15 @@ export function ProfileForm() {
       </div>
     </form>
   );
+}
+
+// Public export — shows skeleton until user is ready, then mounts the inner form
+export function ProfileForm() {
+  const { user, status } = useAuth();
+
+  if (status === "loading" || !user) {
+    return <ProfileFormSkeleton />;
+  }
+
+  return <ProfileFormInner user={user} />;
 }
