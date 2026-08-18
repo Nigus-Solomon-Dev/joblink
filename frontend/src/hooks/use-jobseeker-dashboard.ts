@@ -71,6 +71,7 @@ export function useSkillGap() {
     queryKey: ["jobseeker", "dashboard", "skill-gap"],
     queryFn: () => getSkillGapAnalysis(),
     enabled: status === "authenticated",
+    staleTime: 0,
   });
 }
 
