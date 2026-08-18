@@ -4,6 +4,7 @@ const app = require('./app');
 const config = require('./config/env');
 const Logger = require('./utils/logger');
 const websocketService = require('./services/websocketService');
+const telegramBotService = require('./services/telegramBotService');
 
 const PORT = config.PORT;
 
@@ -13,6 +14,13 @@ websocketService.initialize(server);
 
 server.listen(PORT, () => {
   Logger.info(`Server running in ${config.NODE_ENV} mode on port ${PORT}`);
+  telegramBotService.start()
+    .then((result) => {
+      Logger.info('Telegram bot startup', result);
+    })
+    .catch((error) => {
+      Logger.error('Failed to start Telegram bot', { error: error.message });
+    });
 });
 
 // Handle unhandled promise rejections
@@ -32,6 +40,7 @@ process.on('uncaughtException', (err) => {
 // Handle SIGTERM
 process.on('SIGTERM', () => {
   Logger.info('SIGTERM received. Shutting down gracefully...');
+  telegramBotService.stop();
   server.close(() => {
     Logger.info('Process terminated');
     process.exit(0);
@@ -41,6 +50,7 @@ process.on('SIGTERM', () => {
 // Handle SIGINT
 process.on('SIGINT', () => {
   Logger.info('SIGINT received. Shutting down gracefully...');
+  telegramBotService.stop();
   server.close(() => {
     Logger.info('Process terminated');
     process.exit(0);
