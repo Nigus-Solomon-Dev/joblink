@@ -80,7 +80,7 @@ function notifySessionExpired(): void {
 
 let refreshing: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   try {
     const response = await axios.post<ApiResponse<{ accessToken: string }>>(
       `${API_BASE_URL}/auth/refresh`,
@@ -109,9 +109,11 @@ http.interceptors.response.use(
       throw normalizeError(error);
     }
 
-    const isAuthCall = typeof config.url === "string" && config.url.startsWith("/auth/");
-    const shouldRefresh =
-      response.status === 401 && !isAuthCall && !(config as RetriableConfig)._retry;
+    const noRefreshUrls = ["/auth/login", "/auth/register", "/auth/refresh"];
+    const isNoRefreshCall =
+      typeof config.url === "string" &&
+      noRefreshUrls.some((prefix) => config.url?.startsWith(prefix));
+    const shouldRefresh = response.status === 401 && !isNoRefreshCall && !(config as RetriableConfig)._retry;
 
     if (shouldRefresh) {
       (config as RetriableConfig)._retry = true;
