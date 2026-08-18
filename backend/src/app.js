@@ -126,7 +126,17 @@ app.use('/api/v1/emails', emailRoutes);
 app.use('/api/v1/telegram', telegramBotRoutes);
 
 // Locally-stored uploads (fallback when Cloudinary is not configured)
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+// Files are named with a timestamp + random suffix, so they are immutable —
+// long cache times stop the browser from re-downloading on every visit.
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '..', 'uploads'), {
+    maxAge: '30d',
+    immutable: true,
+    etag: true,
+    lastModified: true,
+  }),
+);
 
 // 404 handler
 app.use(notFound);
