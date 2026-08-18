@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { RequireAuth } from "@/components/auth/guards";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
+import { TelegramNotificationsCard } from "@/components/profile/telegram-notifications-card";
 import { Card } from "@/components/ui";
 import { ProfileForm } from "@/components/profile/profile-form";
 
@@ -19,13 +20,16 @@ export default function ProfileRoute() {
         </header>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
-          <Card className="h-fit">
-            <h2 className="text-base font-semibold text-foreground">Personal information</h2>
-            <p className="mb-6 mt-0.5 text-sm text-slate-500">
-              These fields are shown to employers when you apply.
-            </p>
-            <ProfileForm />
-          </Card>
+          <div className="space-y-6">
+            <Card className="h-fit">
+              <h2 className="text-base font-semibold text-foreground">Personal information</h2>
+              <p className="mb-6 mt-0.5 text-sm text-slate-500">
+                These fields are shown to employers when you apply.
+              </p>
+              <ProfileForm />
+            </Card>
+            <TelegramNotificationsCard />
+          </div>
           <ProfileSidebar />
         </div>
       </div>
