@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { resolveMediaUrl } from "@/lib/media";
 
 type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -35,8 +36,9 @@ export function Avatar({ src, name, size = "md", className }: AvatarProps) {
   );
 
   if (src) {
+    const resolved = resolveMediaUrl(src);
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={name ?? "Avatar"} className={classes} />;
+    return <img src={resolved} alt={name ?? "Avatar"} className={classes} />;
   }
 
   return (
