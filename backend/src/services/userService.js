@@ -1,8 +1,52 @@
 const { AppError, NotFoundError } = require('../utils/errors');
 const { USER_ROLES, USER_STATUS } = require('../constants');
 const { paginate } = require('../utils/helpers');
+const crypto = require('crypto');
+
+const TELEGRAM_LINK_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const TELEGRAM_LINK_CODE_LENGTH = 8;
+const TELEGRAM_LINK_CODE_TTL_MS = 15 * 60 * 1000;
 
 class UserService {
+  async generateTelegramLinkCode(userId) {
+    const User = require('../models').User;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    let code = '';
+    const bytes = crypto.randomBytes(TELEGRAM_LINK_CODE_LENGTH);
+    for (let i = 0; i < TELEGRAM_LINK_CODE_LENGTH; i += 1) {
+      code += TELEGRAM_LINK_CODE_ALPHABET[bytes[i] % TELEGRAM_LINK_CODE_ALPHABET.length];
+    }
+
+    const expiresAt = new Date(Date.now() + TELEGRAM_LINK_CODE_TTL_MS);
+    user.telegramLinkToken = code;
+    user.telegramLinkTokenExpiresAt = expiresAt;
+    await user.save();
+
+    return { code, expiresAt };
+  }
+
+  async unlinkTelegram(userId) {
+    const User = require('../models').User;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    user.telegramId = null;
+    user.telegramSubscribed = false;
+    user.telegramLinkToken = null;
+    user.telegramLinkTokenExpiresAt = null;
+    await user.save();
+
+    return user.toPublicJSON();
+  }
+
   async getUserById(userId, includePrivate = false) {
     const User = require('../models').User;
     const user = await User.findById(userId);
