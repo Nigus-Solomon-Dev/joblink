@@ -100,6 +100,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    telegramLinkToken: {
+      type: String,
+      default: null,
+    },
+    telegramLinkTokenExpiresAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -112,7 +120,9 @@ userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 userSchema.index({ status: 1 });
 userSchema.index({ location: 1 });
+userSchema.index({ location: 1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ telegramLinkToken: 1 }, { sparse: true, unique: true });
 
 userSchema.virtual('isLocked').get(function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
@@ -133,6 +143,8 @@ userSchema.virtual('fullProfile').get(function () {
     linkedin: this.linkedin,
     emailVerified: this.emailVerified,
     lastLogin: this.lastLogin,
+    telegramId: this.telegramId,
+    telegramSubscribed: this.telegramSubscribed,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
@@ -186,6 +198,13 @@ userSchema.methods.toPublicJSON = function () {
   delete obj.passwordResetExpires;
   delete obj.loginAttempts;
   delete obj.lockUntil;
+  // Normalize ObjectId arrays to plain strings for JSON consumers
+  if (Array.isArray(obj.skills)) {
+    obj.skills = obj.skills.map((id) => id.toString());
+  }
+  if (Array.isArray(obj.savedJobs)) {
+    obj.savedJobs = obj.savedJobs.map((id) => id.toString());
+  }
   return obj;
 };
 
