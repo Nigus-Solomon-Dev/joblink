@@ -53,6 +53,7 @@ import {
   type UserTypingEvent,
 } from "@/lib/messaging-socket";
 import { searchUsers, type UserSummary } from "@/lib/api/users";
+import type { PaginationMeta } from "@/types/api";
 import type { Message } from "@/types";
 
 /* ------------------------------------------------------------------ */
@@ -261,6 +262,7 @@ export function useDeleteConversation() {
 
 export function useSendMessage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: ({
       conversationId,
@@ -269,9 +271,61 @@ export function useSendMessage() {
       conversationId: string;
       input: SendMessageInput;
     }) => sendMessage(conversationId, input),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["messages", "thread", variables.conversationId] });
+    onMutate: async ({ conversationId, input }) => {
+      await queryClient.cancelQueries({
+        queryKey: ["messages", "thread", conversationId],
+      });
+      const previous = queryClient.getQueryData<ThreadCacheValue>([
+        "messages",
+        "thread",
+        conversationId,
+      ]);
+      const optimistic: Message = {
+        _id: `temp-${Date.now()}`,
+        conversationId,
+        senderId: user?._id ?? "",
+        receiverId: "",
+        content: input.content,
+        attachments: input.attachments ?? [],
+        isRead: false,
+        isEdited: false,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      appendMessageToThreadCache(queryClient, conversationId, optimistic);
+      return { previous };
+    },
+    onSuccess: (data, variables) => {
+      const real = data.message;
+      // Drop the temporary bubble and put the persisted message in its place.
+      queryClient.setQueryData<ThreadCacheValue>(
+        ["messages", "thread", variables.conversationId],
+        (old) => {
+          if (!old || !Array.isArray(old.pages)) return old;
+          const pages = old.pages.map((page) => ({
+            ...page,
+            data: page.data.filter((msg) => !msg._id.startsWith("temp-")),
+          }));
+          const head = pages[0];
+          if (head && !head.data.some((msg) => msg._id === real._id)) {
+            head.data.push(real);
+          }
+          return { ...old, pages };
+        },
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["messages", "thread", variables.conversationId],
+      });
       invalidateConversationQueries(queryClient);
+    },
+    onError: (_error, variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData<ThreadCacheValue>(
+          ["messages", "thread", variables.conversationId],
+          context.previous,
+        );
+      }
     },
   });
 }
@@ -349,21 +403,28 @@ export type { UserSummary };
 /* Socket wiring                                                       */
 /* ------------------------------------------------------------------ */
 
+/** Raw (pre-`select`) shape of the thread cache: pages of paginated results. */
+type ThreadCacheValue = {
+  pages: PaginatedPage[];
+  pageParams: (string | undefined)[];
+};
+
+type PaginatedPage = { data: Message[]; meta: PaginationMeta };
+
 function appendMessageToThreadCache(
   queryClient: ReturnType<typeof useQueryClient>,
   conversationId: string,
   message: Message,
 ) {
-  queryClient.setQueryData<{
-    pages: Message[][];
-    pageParams: (string | undefined)[];
-  }>(["messages", "thread", conversationId], (old) => {
-    if (!old) return old;
+  queryClient.setQueryData<ThreadCacheValue>(["messages", "thread", conversationId], (old) => {
+    if (!old || !Array.isArray(old.pages)) return old;
+    if (old.pages.some((page) => page.data.some((msg) => msg._id === message._id))) return old;
     const head = old.pages[0];
-    if (!head || head.some((msg) => msg._id === message._id)) return old;
+    if (!head) return old;
+    // Page 0 is the newest window, ordered oldest→newest, so append at the tail.
     return {
       ...old,
-      pages: [[message, ...head], ...old.pages.slice(1)],
+      pages: [{ ...head, data: [...head.data, message] }, ...old.pages.slice(1)],
     };
   });
 }
