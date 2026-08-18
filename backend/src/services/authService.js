@@ -168,7 +168,7 @@ class AuthService {
       throw new AppError('User not found or inactive', 401);
     }
 
-    await TokenBlacklist.add(refreshToken);
+    await TokenBlacklist.add(refreshToken, user.id);
 
     const tokens = this.generateTokens(user);
     return tokens;
@@ -176,7 +176,8 @@ class AuthService {
 
   async logout(refreshToken) {
     if (refreshToken) {
-      await TokenBlacklist.add(refreshToken);
+      const decoded = jwt.decode(refreshToken);
+      await TokenBlacklist.add(refreshToken, decoded?.id);
     }
     return true;
   }
