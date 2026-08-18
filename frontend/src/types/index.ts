@@ -20,6 +20,8 @@ export interface User {
   skills?: string[];
   emailVerified: boolean;
   lastLogin?: string | null;
+  telegramId?: string | null;
+  telegramSubscribed?: boolean;
   createdAt: string;
   updatedAt: string;
 }
