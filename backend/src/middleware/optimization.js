@@ -14,13 +14,20 @@ const optimizationMiddleware = {
 
   cacheControl: (req, res, next) => {
     const isStatic = req.path.includes('/static/') || req.path.includes('/public/');
-    
+    const isUpload = req.path.startsWith('/uploads/');
+
+    if (isUpload) {
+      // Uploaded files are immutable (timestamped names); let express.static
+      // own the caching so browsers don't re-download on every visit.
+      return next();
+    }
+
     if (isStatic) {
       res.setHeader('Cache-Control', 'public, max-age=31536000');
     } else if (req.method === 'GET') {
       res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     }
-    
+
     next();
   },
 
