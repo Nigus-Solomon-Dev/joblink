@@ -7,15 +7,17 @@ const { protect, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Telegram calls this endpoint directly (no app JWT), so it must stay public.
+router.post('/webhook', (req, res, next) => {
+  telegramBotController.handleWebhook(req, res, next);
+});
+
+// Everything below requires an authenticated admin.
 router.use(protect, restrictTo('admin'));
 
 router.get('/info', telegramBotController.getBotInfo);
 
 router.get('/status', telegramBotController.getBotStatus);
-
-router.post('/webhook', (req, res, next) => {
-  telegramBotController.handleWebhook(req, res, next);
-});
 
 router.post('/broadcast', 
   body('message').notEmpty().withMessage('Message is required'),
