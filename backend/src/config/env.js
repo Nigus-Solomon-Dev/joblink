@@ -38,7 +38,7 @@ if (isProduction) {
 module.exports = {
   PORT: process.env.PORT || 5000,
   NODE_ENV,
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/joblink',
+  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/joblink',
   JWT_SECRET: process.env.JWT_SECRET || 'dev-only-insecure-jwt-secret',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'dev-only-insecure-refresh-secret',
