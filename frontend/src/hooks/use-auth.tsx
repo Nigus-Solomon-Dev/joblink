@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 
 import { authApi } from "@/lib/api";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/auth-storage";
-import { onSessionExpired } from "@/lib/api/http";
+import { onSessionExpired, refreshAccessToken } from "@/lib/api/http";
 import type { User } from "@/types";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -42,7 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
 
   const bootstrap = useCallback(async () => {
-    if (!getAccessToken()) {
+    let token = getAccessToken();
+    if (!token) {
+      token = await refreshAccessToken();
+    }
+    if (!token) {
       setUser(null);
       setStatus("unauthenticated");
       return;
